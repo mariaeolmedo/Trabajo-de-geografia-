@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Etnográfico del Ecuador - Censo 2010</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        
+        .map-container {
+            flex: 1;
+            min-width: 300px;
+            height: 500px;
+            position: relative;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .info-panel {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 25px;
+            overflow-y: auto;
+            max-height: 500px;
+        }
+        
+        .region-title {
+            color: #2c3e50;
+            border-bottom: 2px solid #4a6491;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .region-details {
+            margin-bottom: 25px;
+        }
+        
+        .detail-item {
+            margin-bottom: 15px;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #2c3e50;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .ethnic-groups {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .ethnic-badge {
+            background: #e8eff7;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #2c3e50;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-width: 250px;
+        }
+        
+        .legend h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-size: 1rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .stat-highlight {
+            display: flex;
+            justify-content: space-around;
+            margin: 25px 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: #f0f5ff;
+            border-radius: 8px;
+            flex: 1;
+            margin: 0 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #4a6491;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .layer-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .layer-controls button {
+            display: block;
+            width: 100%;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: #4a6491;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .layer-controls button:hover {
+            background: #3a547b;
+        }
+        
+        .layer-controls button.active {
+            background: #2c3e50;
+        }
+        
+        .sources {
+            margin-top: 30px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #4a6491;
+        }
+        
+        .sources h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .sources p {
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .sources a {
+            color: #4a6491;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .sources a:hover {
+            text-decoration: underline;
+        }
+        
+        .data-source {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .province-button {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 15px;
+            background: #4a6491;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .province-button:hover {
+            background: #3a547b;
+        }
+        
+        .province-list {
+            margin-top: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        .instructions {
+            background: #e8f4fc;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .instructions h3 {
+            color: #0d47a1;
+            margin-top: 0;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .map-container, .info-panel {
+                width: 100%;
+            }
+            
+            .map-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Mapa Etnográfico del Ecuador - Censo 2010</h1>
+            <p class="subtitle">Datos oficiales del Censo de Población y Vivienda 2010 - INEC</p>
+        </header>
+        
+        <div class="instructions">
+            <h3>¿Cómo compartir este mapa?</h3>
+            <ol>
+                <li>Guarda este código como un archivo HTML (por ejemplo: <strong>mapa-ecuador.html</strong>)</li>
+                <li>Sube el archivo a <a href="https://app.netlify.com/drop" target="_blank">Netlify Drop</a> arrastrando y soltando</li>
+                <li>¡Obtendrás un enlace público para compartir inmediatamente!</li>
+            </ol>
+        </div>
+        
+        <div class="content">
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="legend">
+                    <h3>Regiones del Ecuador</h3>
+                    <div class="legend-item">
+                        <span>Costa</span>
+                    </div>
+                    <div class="legend-item">
+                        <span>Sierra</span>
+                    </div>
+                    <div class="legend-item">
+                        <span>Oriente</span>
+                    </div>
+                    <div class="legend-item">
+                        <span>Insular</span>
+                    </div>
+                </div>
+                
+                <div class="layer-controls">
+                    <button id="satellite-btn" class="active">Vista Satelital</button>
+                    <button id="street-btn">Vista de Calles</button>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <h2 class="region-title" id="region-name">Ecuador - Diversidad Etnográfica</h2>
+                <div class="data-source">Fuente: Censo de Población y Vivienda 2010 - INEC</div>
+                
+                <div class="region-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Población total (Censo 2010):</span>
+                        <span id="region-population">14,483,499 habitantes</span>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">Composición étnica nacional:</span>
+                        <div class="ethnic-groups" id="ethnic-groups">
+                            <span class="ethnic-badge">Mestizos (71.9%)</span>
+                            <span class="ethnic-badge">Montubios (7.4%)</span>
+                            <span class="ethnic-badge">Afroecuatorianos (7.2%)</span>
+                            <span class="ethnic-badge">Indígenas (7.0%)</span>
+                            <span class="ethnic-badge">Blancos (6.1%)</span>
+                            <span class="ethnic-badge">Otros (0.4%)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">Provincias por región:</span>
+                        <div class="province-list">
+                            <button class="province-button" onclick="showProvinceInfo('Azuay')">Azuay</button>
+                            <button class="province-button" onclick="showProvinceInfo('Bolívar')">Bolívar</button>
+                            <button class="province-button" onclick="showProvinceInfo('Cañar')">Cañar</button>
+                            <button class="province-button" onclick="showProvinceInfo('Carchi')">Carchi</button>
+                            <button class="province-button" onclick="showProvinceInfo('Chimborazo')">Chimborazo</button>
+                            <button class="province-button" onclick="showProvinceInfo('Cotopaxi')">Cotopaxi</button>
+                            <button class="province-button" onclick="showProvinceInfo('El Oro')">El Oro</button>
+                            <button class="province-button" onclick="showProvinceInfo('Esmeraldas')">Esmeraldas</button>
+                            <button class="province-button" onclick="showProvinceInfo('Galápagos')">Galápagos</button>
+                            <button class="province-button" onclick="showProvinceInfo('Guayas')">Guayas</button>
+                            <button class="province-button" onclick="showProvinceInfo('Imbabura')">Imbabura</button>
+                            <button class="province-button" onclick="showProvinceInfo('Loja')">Loja</button>
+                            <button class="province-button" onclick="showProvinceInfo('Los Ríos')">Los Ríos</button>
+                            <button class="province-button" onclick="showProvinceInfo('Manabí')">Manabí</button>
+                            <button class="province-button" onclick="showProvinceInfo('Morona Santiago')">Morona Santiago</button>
+                            <button class="province-button" onclick="showProvinceInfo('Napo')">Napo</button>
+                            <button class="province-button" onclick="showProvinceInfo('Orellana')">Orellana</button>
+                            <button class="province-button" onclick="showProvinceInfo('Pastaza')">Pastaza</button>
+                            <button class="province-button" onclick="showProvinceInfo('Pichincha')">Pichincha</button>
+                            <button class="province-button" onclick="showProvinceInfo('Santa Elena')">Santa Elena</button>
+                            <button class="province-button" onclick="showProvinceInfo('Santo Domingo')">Santo Domingo</button>
+                            <button class="province-button" onclick="showProvinceInfo('Sucumbíos')">Sucumbíos</button>
+                            <button class="province-button" onclick="showProvinceInfo('Tungurahua')">Tungurahua</button>
+                            <button class="province-button" onclick="showProvinceInfo('Zamora Chinchipe')">Zamora Chinchipe</button>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <span class="detail-label">Información de la provincia:</span>
+                        <p id="province-description">Seleccione una provincia para ver información detallada.</p>
+                    </div>
+                </div>
+                
+                <div class="stat-highlight">
+                    <div class="stat-item">
+                        <div class="stat-value">24</div>
+                        <div class="stat-label">Provincias</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">14.48M</div>
+                        <div class="stat-label">Habitantes</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">4</div>
+                        <div class="stat-label">Regiones</div>
+                    </div>
+                </div>
+                
+                <div class="sources">
+                    <h3>Fuente de Información</h3>
+                    <p>Todos los datos provienen exclusivamente del <strong>Censo de Población y Vivienda 2010</strong> realizado por el Instituto Nacional de Estadística y Censos (INEC) del Ecuador.</p>
+                    <p>Para más información, visite: <a href="https://www.ecuadorencifras.gob.ec/censo-de-poblacion-y-vivienda/" target="_blank">https://www.ecuadorencifras.gob.ec/censo-de-poblacion-y-vivienda/</a></p>
+                    <p>Los datos de población y composición étnica corresponden a los resultados oficiales publicados por el INEC.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Inicializar el mapa
+        var map = L.map('map').setView([-1.8312, -78.1834], 7);
+        
+        // Capas base
+        var satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        });
+        
+        var streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
+        
+        // Añadir capa satelital por defecto
+        satelliteLayer.addTo(map);
+        
+        // Datos de las provincias según Censo 2010 del INEC
+        var provinces = {
+            "Tungurahua": {
+                position: [-1.2634, -78.5662],
+                population: "504,583 habitantes",
+                description: "Tungurahua se encuentra en la región Sierra central. Su capital es Ambato.",
+                ethnicGroups: ["Mestizos (82.1%)", "Indígenas (12.4%)", "Blancos (3.4%)", "Afroecuatorianos (1.4%)", "Montubios (0.5%)", "Otros (0.1%)"]
+            },
+            "Cotopaxi": {
+                position: [-0.8380, -78.6665],
+                population: "409,205 habitantes",
+                description: "Cotopaxi está en la región Sierra. Su capital es Latacunga.",
+                ethnicGroups: ["Mestizos (72.1%)", "Indígenas (22.1%)", "Blancos (2.3%)", "Afroecuatorianos (1.7%)", "Montubios (1.8%)", "Otros (0.1%)"]
+            },
+            "Loja": {
+                position: [-3.9931, -79.2042],
+                population: "448,966 habitantes",
+                description: "Loja está en el sur del Ecuador, en la región Sierra. Su capital es Loja.",
+                ethnicGroups: ["Mestizos (90.2%)", "Indígenas (3.7%)", "Blancos (3.0%)", "Afroecuatorianos (2.4%)", "Montubios (0.7%)", "Otros (0.1%)"]
+            },
+            "Pastaza": {
+                position: [-1.4667, -77.9833],
+                population: "83,933 habitantes",
+                description: "Pastaza está en la región Amazónica. Su capital es Puyo.",
+                ethnicGroups: ["Mestizos (55.3%)", "Indígenas (39.8%)", "Blancos (2.9%)", "Afroecuatorianos (1.5%)", "Montubios (0.4%)", "Otros (0.2%)"]
+            },
+            "Azuay": {
+                position: [-2.8829, -79.0039],
+                population: "712,127 habitantes",
+                description: "Azuay se encuentra en la región Sierra. La capital es Cuenca, tercera ciudad más grande del Ecuador.",
+                ethnicGroups: ["Mestizos (89.6%)", "Indígenas (2.5%)", "Blancos (5.1%)", "Afroecuatorianos (2.2%)", "Montubios (0.4%)", "Otros (0.2%)"]
+            },
+            "El Oro": {
+                position: [-3.4833, -79.8167],
+                population: "600,659 habitantes",
+                description: "El Oro se encuentra en la región Costa. Su capital es Machala, conocida como la 'capital bananera del mundo'.",
+                ethnicGroups: ["Mestizos (81.6%)", "Indígenas (0.7%)", "Blancos (7.8%)", "Afroecuatorianos (6.9%)", "Montubios (2.8%)", "Otros (0.3%)"]
+            },
+            "Los Ríos": {
+                position: [-1.3950, -79.5424],
+                population: "778,115 habitantes",
+                description: "Los Ríos se encuentra en la región Costa. Su capital es Babahoyo.",
+                ethnicGroups: ["Mestizos (52.9%)", "Indígenas (0.6%)", "Blancos (5.0%)", "Afroecuatorianos (6.2%)", "Montubios (35.1%)", "Otros (0.3%)"]
+            },
+            "Pichincha": {
+                position: [-0.0500, -78.3667],
+                population: "2,576,287 habitantes",
+                description: "Pichincha se encuentra en la región Sierra norte. Su capital es Quito, la capital del Ecuador.",
+                ethnicGroups: ["Mestizos (82.1%)", "Indígenas (5.3%)", "Blancos (6.3%)", "Afroecuatorianos (4.5%)", "Montubios (1.3%)", "Otros (0.4%)"]
+            },
+            "Bolívar": {
+                position: [-1.5965, -79.0019],
+                population: "183,641 habitantes",
+                description: "Bolívar es una provincia de la Sierra central. Su capital es Guaranda.",
+                ethnicGroups: ["Mestizos (69.6%)", "Indígenas (25.4%)", "Blancos (2.7%)", "Afroecuatorianos (1.1%)", "Montubios (1.1%)", "Otros (0.1%)"]
+            },
+            "Esmeraldas": {
+                position: [0.9682, -79.6697],
+                population: "534,092 habitantes",
+                description: "Esmeraldas está en la región Costa norte. Su capital es Esmeraldas, con una importante población afroecuatoriana.",
+                ethnicGroups: ["Mestizos (44.7%)", "Indígenas (2.8%)", "Blancos (5.9%)", "Afroecuatorianos (43.9%)", "Montubios (2.4%)", "Otros (0.3%)"]
+            },
+            "Manabí": {
+                position: [-0.8167, -80.1667],
+                population: "1,369,780 habitantes",
+                description: "Manabí está en la región Costa. Su capital es Portoviejo.",
+                ethnicGroups: ["Mestizos (69.7%)", "Indígenas (0.2%)", "Blancos (4.7%)", "Afroecuatorianos (6.0%)", "Montubios (19.2%)", "Otros (0.3%)"]
+            },
+            "Santa Elena": {
+                position: [-2.2267, -80.8589],
+                population: "308,693 habitantes",
+                description: "Santa Elena está en la región Costa. Su capital es Santa Elena.",
+                ethnicGroups: ["Mestizos (79.1%)", "Indígenas (1.4%)", "Blancos (3.7%)", "Afroecuatorianos (8.5%)", "Montubios (4.9%)", "Otros (2.4%)"]
+            },
+            "Cañar": {
+                position: [-2.5588, -78.9380],
+                population: "225,184 habitantes",
+                description: "Cañar se encuentra en la región Sierra. Su capital is Azogues.",
+                ethnicGroups: ["Mestizos (76.7%)", "Indígenas (15.2%)", "Blancos (4.3%)", "Afroecuatorianos (2.6%)", "Montubios (1.1%)", "Otros (0.2%)"]
+            },
+            "Galápagos": {
+                position: [-0.6105, -90.3521],
+                population: "25,124 habitantes",
+                description: "Galápagos es una provincia insular. Su capital es Puerto Baquerizo Moreno.",
+                ethnicGroups: ["Mestizos (74.5%)", "Indígenas (7.0%)", "Blancos (9.7%)", "Afroecuatorianos (5.2%)", "Montubios (1.9%)", "Otros (1.7%)"]
+            },
+            "Morona Santiago": {
+                position: [-2.4430, -78.1179],
+                population: "147,940 habitantes",
+                description: "Morona Santiago se encuentra en la región Amazónica. Su capital es Macas.",
+                ethnicGroups: ["Mestizos (46.6%)", "Indígenas (48.4%)", "Blancos (3.1%)", "Afroecuatorianos (1.2%)", "Montubios (0.2%)", "Otros (0.5%)"]
+            },
+            "Santo Domingo": {
+                position: [-0.2500, -79.1667],
+                population: "368,013 habitantes",
+                description: "Santo Domingo de los Tsáchilas se encuentra en la región Costa. Su capital es Santo Domingo.",
+                ethnicGroups: ["Mestizos (81.0%)", "Indígenas (1.7%)", "Blancos (6.8%)", "Afroecuatorianos (7.7%)", "Montubios (2.5%)", "Otros (0.3%)"]
+            },
+            "Carchi": {
+                position: [0.5025, -77.8833],
+                population: "164,524 habitantes",
+                description: "Carchi está en el extremo norte del Ecuador, en la región Sierra. Su capital es Tulcán.",
+                ethnicGroups: ["Mestizos (86.9%)", "Indígenas (3.4%)", "Blancos (2.9%)", "Afroecuatorianos (6.4%)", "Montubios (0.3%)", "Otros (0.1%)"]
+            },
+            "Guayas": {
+                position: [-1.9575, -79.9193],
+                population: "3,645,483 habitantes",
+                description: "Guayas es la provincia más poblada del Ecuador, en la región Costa. Su capital es Guayaquil, la ciudad más grande del país.",
+                ethnicGroups: ["Mestizos (67.5%)", "Indígenas (1.3%)", "Blancos (9.8%)", "Afroecuatorianos (9.7%)", "Montubios (11.3%)", "Otros (0.5%)"]
+            },
+            "Napo": {
+                position: [-0.6667, -77.8333],
+                population: "103,697 habitantes",
+                description: "Napo está en la región Amazónica. Su capital es Tena.",
+                ethnicGroups: ["Mestizos (38.1%)", "Indígenas (56.8%)", "Blancos (2.7%)", "Afroecuatorianos (1.6%)", "Montubios (0.6%)", "Otros (0.2%)"]
+            },
+            "Sucumbíos": {
+                position: [0.0833, -76.8833],
+                population: "176,472 habitantes",
+                description: "Sucumbíos está en la región Amazónica norte. Su capital es Nueva Loja.",
+                ethnicGroups: ["Mestizos (75.0%)", "Indígenas (13.4%)", "Blancos (4.5%)", "Afroecuatorianos (5.9%)", "Montubios (1.0%)", "Otros (0.2%)"]
+            },
+            "Chimborazo": {
+                position: [-1.7992, -78.6665],
+                population: "458,581 habitantes",
+                description: "Chimborazo se encuentra en la región Sierra central. Su capital es Riobamba.",
+                ethnicGroups: ["Mestizos (58.4%)", "Indígenas (38.0%)", "Blancos (2.2%)", "Afroecuatorianos (1.1%)", "Montubios (0.3%)", "Otros (0.1%)"]
+            },
+            "Imbabura": {
+                position: [0.3606, -78.1260],
+                population: "398,244 habitantes",
+                description: "Imbabura se encuentra en la región Sierra norte. Su capital es Ibarra.",
+                ethnicGroups: ["Mestizos (65.7%)", "Indígenas (25.8%)", "Blancos (2.7%)", "Afroecuatorianos (5.4%)", "Montubios (0.3%)", "Otros (0.1%)"]
+            },
+            "Orellana": {
+                position: [-0.7942, -76.4694],
+                population: "136,396 habitantes",
+                description: "Orellana se encuentra en la región Amazónica. Su capital es Puerto Francisco de Orellana (Coca).",
+                ethnicGroups: ["Mestizos (57.5%)", "Indígenas (31.8%)", "Blancos (4.4%)", "Afroecuatorianos (4.9%)", "Montubios (1.2%)", "Otros (0.2%)"]
+            },
+            "Zamora Chinchipe": {
+                position: [-4.0667, -78.9667],
+                population: "91,376 habitantes",
+                description: "Zamora Chinchipe está en el sur de la región Amazónica. Su capital es Zamora.",
+                ethnicGroups: ["Mestizos (80.3%)", "Indígenas (15.6%)", "Blancos (2.1%)", "Afroecuatorianos (1.4%)", "Montubios (0.2%)", "Otros (0.4%)"]
+            }
+        };
+
+        // Crear marcadores para cada provincia
+        for (var provinceName in provinces) {
+            if (provinces.hasOwnProperty(provinceName)) {
+                var province = provinces[provinceName];
+                var marker = L.marker(province.position).addTo(map);
+                
+                marker.province = provinceName;
+                marker.on('click', function(e) {
+                    showProvinceInfo(this.province);
+                });
+                
+                marker.bindPopup("<b>" + provinceName + "</b><br>" + province.population + "<br>Haz clic para más información");
+            }
+        }
+        
+        // Función para mostrar información de la provincia
+        function showProvinceInfo(provinceName) {
+            var province = provinces[provinceName];
+            
+            // Actualizar información en el panel
+            document.getElementById('region-name').textContent = "Provincia de " + provinceName;
+            document.getElementById('region-population').textContent = province.population;
+            document.getElementById('province-description').textContent = province.description;
+            
+            // Actualizar grupos étnicos
+            var ethnicGroupsContainer = document.getElementById('ethnic-groups');
+            ethnicGroupsContainer.innerHTML = '';
+            
+            province.ethnicGroups.forEach(function(group) {
+                var badge = document.createElement('span');
+                badge.className = 'ethnic-badge';
+                badge.textContent = group;
+                ethnicGroupsContainer.appendChild(badge);
+            });
+            
+            // Mover el mapa a la provincia seleccionada
+            map.setView(province.position, 8);
+        }
+        
+        // Control de capas base
+        document.getElementById('satellite-btn').addEventListener('click', function() {
+            map.removeLayer(streetLayer);
+            satelliteLayer.addTo(map);
+            this.classList.add('active');
+            document.getElementById('street-btn').classList.remove('active');
+        });
+        
+        document.getElementById('street-btn').addEventListener('click', function() {
+            map.removeLayer(satelliteLayer);
+            streetLayer.addTo(map);
+            this.classList.add('active');
+            document.getElementById('satellite-btn').classList.remove('active');
+        });
+    </script>
+</body>
+</html>
